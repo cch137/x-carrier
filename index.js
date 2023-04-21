@@ -7,7 +7,7 @@ const WS = require('ws');
 require('dotenv').config();
 
 
-const filesDirname = path.join(__dirname, 'files/');
+const filesDirname = path.join(__dirname, 'drive/');
 const PIN = process.env.PIN || 'cch137';
 const app = express();
 const server = require('http').createServer(app);
