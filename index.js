@@ -8,6 +8,7 @@ require('dotenv').config();
 
 
 const filesDirname = path.join(__dirname, 'drive/');
+const getStoredFp = (rPath) => path.join(filesDirname, rPath);
 const PIN = process.env.PIN || 'cch137';
 const app = express();
 const server = require('http').createServer(app);
@@ -55,7 +56,7 @@ const driveReaddir = () => {
       if (err) {
         reject(err);
       } else {
-        resolve(files.filter(fn => fs.statSync(path.join(filesDirname, fn)).isFile()));
+        resolve(files.filter(fn => fs.statSync(getStoredFp(fn)).isFile()));
       }
     });
   });
@@ -68,7 +69,7 @@ app.get('/login', (req, res) => {
 app.get('/', (req, res) => {
   const { file } = req.query;
   if (file) {
-    const fp = path.join(filesDirname, file);
+    const fp = getStoredFp(file);
     if (fs.existsSync(fp)) res.sendFile(fp);
     else res.status(404).send();
     return;
@@ -90,7 +91,7 @@ app.post('/', upload.single('file'), (req, res) => {
   const { file } = req;
   if (file) {
     const filename = file.filename || file.originalname;
-    fs.writeFile(path.join(filesDirname, filename), file.buffer, (err) => {
+    fs.writeFile(getStoredFp(filename), file.buffer, (err) => {
       if (err) {
         res.status(500).send(err);
       } else {
@@ -105,7 +106,7 @@ app.post('/', upload.single('file'), (req, res) => {
 
 app.delete('/', (req, res) => {
   const { file } = req.query;
-  const fp = path.join(filesDirname, file);
+  const fp = getStoredFp(file);
   try {
     if (fs.existsSync(fp)) {
       fs.rmSync(fp, { recursive: true });
