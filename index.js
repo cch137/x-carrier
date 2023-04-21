@@ -16,6 +16,8 @@ const io = new WS.Server({ server });
 const upload = multer();
 const port = process.env.PORT || 3000;
 
+app.enable('view cache');
+
 if (!fs.existsSync(filesDirname)) fs.mkdirSync(filesDirname);
 
 app.use(bodyParser.json());
