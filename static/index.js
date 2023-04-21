@@ -37,7 +37,7 @@ const app = createApp({
     deleteItem(fn) {
       // if (!confirm(`Do you want to permanently delete "${fn}"?`)) return;
       const xhr = new XMLHttpRequest();
-      xhr.open('delete', `/?pin=${getPin()}file=${fn}`);
+      xhr.open('delete', `/?file=${fn}`);
       xhr.setRequestHeader('pin', getPin());
       xhr.send();
       xhr.onload = () => {
@@ -52,6 +52,9 @@ const app = createApp({
     }
   },
   computed: {
+    pin() {
+      return getPin();
+    },
     isNotEmpty() {
       return Boolean(this.items.length);
     }
