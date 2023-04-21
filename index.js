@@ -45,7 +45,7 @@ const broadcastOnline = () => {
   broadcast('online', io.clients.size);
 }
 
-fs.watch(filesDirname, {}, (ev, fn) => {
+fs.watchFile(filesDirname, {}, (ev, fn) => {
   broadcastUpdate();
 });
 
