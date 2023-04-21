@@ -69,8 +69,9 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  const { file } = req.query;
+  const { file, pin } = req.query;
   if (file) {
+    if (pin != PIN) return res.status(401).send();
     const fp = getStoredFp(file);
     if (fs.existsSync(fp)) res.sendFile(fp);
     else res.status(404).send();
