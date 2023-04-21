@@ -16,6 +16,8 @@ const io = new WS.Server({ server });
 const upload = multer();
 const port = process.env.PORT || 3000;
 
+if (!fs.existsSync(filesDirname)) fs.mkdirSync(filesDirname);
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('trust proxy', true);
