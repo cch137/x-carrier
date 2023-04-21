@@ -12,7 +12,8 @@ const app = createApp({
   data() {
     return {
       online: 0,
-      items: []
+      items: [],
+      isSubmitting: false,
     }
   },
   methods: {
@@ -28,7 +29,9 @@ const app = createApp({
       xhr.setRequestHeader('pin', getPin());
       xhr.send(formData);
       app.$refs.fileInput.value = '';
+      app.isSubmitting = true;
       xhr.onload = () => {
+        app.isSubmitting = false;
         if (xhr.status != 200) {
           alert(xhr.responseText);
         }
@@ -40,7 +43,9 @@ const app = createApp({
       xhr.open('delete', `/?file=${fn}`);
       xhr.setRequestHeader('pin', getPin());
       xhr.send();
+      app.isSubmitting = true;
       xhr.onload = () => {
+        app.isSubmitting = false;
         if (xhr.status != 200) {
           alert(xhr.responseText);
         }
@@ -52,6 +57,9 @@ const app = createApp({
     }
   },
   computed: {
+    isWaiting() {
+      return !this.isSubmitting;
+    },
     pin() {
       return getPin();
     },

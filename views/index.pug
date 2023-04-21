@@ -16,6 +16,7 @@ html(lang="en")
       div#header.flex-center
         a(href='/')
           h1.m-0 X-Carrier
+        div.flex-center(style='font-weight:bold', :class='{hidden:isWaiting}') Please wait...
         div.flex-1
         div#online.flex-center= 'Online: {{online}}'
         button.button(@click='openFileInput') Upload
