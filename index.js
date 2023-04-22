@@ -40,7 +40,7 @@ const broadcast = (event, data) => {
 }
 
 const broadcastUpdate = () => {
-  broadcast('update', data);
+  broadcast('update');
 }
 
 const broadcastOnline = () => {
