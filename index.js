@@ -16,8 +16,6 @@ const io = new WS.Server({ server });
 const upload = multer();
 const port = process.env.PORT || 3000;
 
-app.enable('view cache');
-
 if (!fs.existsSync(filesDirname)) fs.mkdirSync(filesDirname);
 
 app.use(bodyParser.json());
@@ -25,6 +23,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.set('trust proxy', true);
 app.set('views', 'views');
 app.set('view engine', 'pug');
+app.enable('view cache');
 app.locals.pretty = false;
 
 app.use('/static/', express.static('static'));
