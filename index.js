@@ -40,9 +40,7 @@ const broadcast = (event, data) => {
 }
 
 const broadcastUpdate = () => {
-  driveReaddir()
-  .then(data => broadcast('update', data))
-  .catch(err => broadcast('error', err));
+  broadcast('update', data);
 }
 
 const broadcastOnline = () => {
@@ -52,18 +50,6 @@ const broadcastOnline = () => {
 fs.watchFile(filesDirname, {}, (ev, fn) => {
   broadcastUpdate();
 });
-
-const driveReaddir = () => {
-  return new Promise((resolve, reject) => {
-    fs.readdir(filesDirname, (err, files) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(files.filter(fn => fs.statSync(getStoredFp(fn)).isFile()));
-      }
-    });
-  });
-}
 
 app.get('/login', (req, res) => {
   res.render('login');
@@ -82,13 +68,11 @@ app.get('/', (req, res) => {
 });
 
 app.post('/list', (req, res) => {
-  if (req.body.pin == PIN) {
-    driveReaddir()
-    .then(data => res.send(data))
-    .catch(err => res.status(500).send(err));
-  } else {
-    res.status(401).send('Not logged in');
-  }
+  if (req.body.pin != PIN) return res.status(401).send('Not logged in');
+  fs.readdir(filesDirname, (err, files) => {
+    if (err) return res.status(500).send(err);
+    res.send(files.filter(fn => fs.statSync(getStoredFp(fn)).isFile()));
+  });
 });
 
 app.post('/', upload.single('file'), (req, res) => {
