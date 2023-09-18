@@ -6,7 +6,6 @@ const multer = require('multer');
 const WS = require('ws');
 require('dotenv').config();
 
-
 const filesDirname = path.join(__dirname, 'drive/');
 const getStoredFp = (rPath) => path.join(filesDirname, rPath);
 const PIN = process.env.PIN || 'cch137';
