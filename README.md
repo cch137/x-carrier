@@ -73,3 +73,31 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## Build, Push and Test
+
+Build, push and test:
+
+```bash
+npm run build
+npm run start
+
+```
+
+```bash
+npm run build
+git add .
+git commit -am "build"
+git push
+npm t
+
+```
+
+```bash
+npm run build
+git add .
+git commit -am "build"
+git push
+shutdown -h
+
+```
