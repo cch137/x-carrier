@@ -5,12 +5,12 @@ import drive from '~/server/services/drive'
 import troll from '~/utils/troll'
 import random from '~/utils/random'
 
-export default defineEventHandler(async function (event): Promise<{ error?: string, data: string[] }> {
+export default defineEventHandler(async function (event): Promise<{ error?: string, data: boolean }> {
   const { req, res } = event.node
   try {
     const pin = troll.d(parseCookie(req.headers.cookie || '')?.token || '', 2, SALT);
     if (pin != PIN) {
-      return { error: 'Not logged in.', data: [] };
+      return { error: 'Not logged in.', data: false };
     }
   } catch {}
   const files = await readMultipartFormData(event);
@@ -22,5 +22,5 @@ export default defineEventHandler(async function (event): Promise<{ error?: stri
       );
     }));
   }
-  return { data: drive.fileList() };
+  return { data: true };
 })

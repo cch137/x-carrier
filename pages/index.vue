@@ -55,7 +55,7 @@ const { isLoggedIn } = useAuth();
 const isLoading = ref(false);
 const fileList = ref<string[]>([]);
 
-async function _loadFileList() {
+async function _fetchFileList() {
   try {
     const res = await $fetch('/api/drive/list', { method: 'POST' });
     fileList.value = res.data;
@@ -65,7 +65,7 @@ async function _loadFileList() {
 async function loadFileList() {
   isLoading.value = true;
   const loading = ElLoading.service({ text: 'Loading...' });
-  await _loadFileList();
+  await _fetchFileList();
   isLoading.value = false;
   loading.close();
 }
@@ -79,11 +79,8 @@ async function fileUploadChanged() {
   const loading = ElLoading.service({ text: 'Loading...' });
   const formData = new FormData();
   const files = fileUplaodEl().files || [];
-  for (let i = 0; i < files.length; i++) {
-    formData.append(`${i}`, files[i]);
-  }
-  const res = await $fetch('/api/drive/file', { method: 'POST', body: formData });
-  fileList.value = res.data;
+  for (let i = 0; i < files.length; i++) formData.append(`${i}`, files[i]);
+  await $fetch('/api/drive/file', { method: 'POST', body: formData });
   isLoading.value = false;
   loading.close();
 }
@@ -91,8 +88,7 @@ async function fileUploadChanged() {
 async function deleteFile(fp: string) {
   isLoading.value = true;
   const loading = ElLoading.service({ text: 'Loading...' });
-  const res = await $fetch('/api/drive/file', { method: 'DELETE', body: { fp } });
-  fileList.value = res.data;
+  await $fetch('/api/drive/file', { method: 'DELETE', body: { fp } });
   isLoading.value = false;
   loading.close();
 }
@@ -101,6 +97,32 @@ watch(isLoggedIn, (value) => value ? loadFileList() : null);
 
 if (process.client) {
   if (isLoggedIn.value) loadFileList();
+}
+
+async function startListening() {
+  const controller = new AbortController()
+  const streamRes = await fetch('/api/drive/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+    signal: controller.signal
+  });
+  const decoder = new TextDecoder();
+  // @ts-ignore
+  const reader = streamRes.body.getReader();
+  const readChunks = async () => {
+    await reader.read().then(async ({ value, done }) => {
+      if (done) return;
+      const decodedValue = decoder.decode(value);
+      _fetchFileList();
+      readChunks();
+    });
+  }
+  readChunks()
+}
+
+if (process.client) {
+  startListening();
 }
 
 useTitle(`Home - ${appName}`)

@@ -17,7 +17,11 @@ function makeDir() {
 
 makeDir();
 
+const eventTarget = new EventTarget();
+
 export default {
+  eventTarget,
+
   fileList() {
     return fs.readdirSync(filesDirPath);
   },
@@ -32,6 +36,7 @@ export default {
   },
 
   async writeFile(fp: string, content: Buffer) {
+    eventTarget.dispatchEvent(new Event('change'));
     fp = path.join(filesDirPath, `./${fp}`);
     return new Promise((resolve, reject) => fs.writeFile(fp, content, {}, (err) => {
       if (err) return reject(err);
@@ -40,6 +45,7 @@ export default {
   },
 
   async deleteFile(fp: string) {
+    eventTarget.dispatchEvent(new Event('change'));
     fp = path.join(filesDirPath, `./${fp}`);
     return new Promise((resolve, reject) => fs.rm(fp, (err) => {
       if (err) return reject(err);
