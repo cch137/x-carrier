@@ -12,7 +12,7 @@ export default defineEventHandler(async function (event): Promise<any> {
       return '';
     }
   } catch {}
-  const fp: string = (req.url || '').split('/').at(-1) as string || '';
+  const fp: string = (decodeURIComponent(req.url || '')).split('/').at(-1) as string || '';
   const fileData = drive.readFile(fp);
   if (!fileData.exists) {
     res.statusCode = 404;

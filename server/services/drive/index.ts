@@ -21,6 +21,7 @@ export default {
   fileList() {
     return fs.readdirSync(filesDirPath);
   },
+
   readFile(fp: string) {
     fp = path.join(filesDirPath, `./${fp}`);
     const exists = fs.existsSync(fp);
@@ -28,5 +29,21 @@ export default {
     const mimetype = exists ? mime.getType(fp) || 'application' : '';
     const encoding = mimetype.startsWith('text') ? chardet.detect(content) : undefined;
     return { exists, content, mimetype, encoding };
+  },
+
+  async writeFile(fp: string, content: Buffer) {
+    fp = path.join(filesDirPath, `./${fp}`);
+    return new Promise((resolve, reject) => fs.writeFile(fp, content, {}, (err) => {
+      if (err) return reject(err);
+      resolve(null);
+    }));
+  },
+
+  async deleteFile(fp: string) {
+    fp = path.join(filesDirPath, `./${fp}`);
+    return new Promise((resolve, reject) => fs.rm(fp, (err) => {
+      if (err) return reject(err);
+      resolve(null);
+    }));
   }
 }

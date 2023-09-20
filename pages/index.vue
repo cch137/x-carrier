@@ -2,18 +2,34 @@
   <div class="mt-8 flex-col flex-center">
     <div v-if="isLoggedIn">
       <div>
-        <el-button :icon="Upload" :loading="isLoading">Upload</el-button>
+        <el-button :icon="Upload" @click="fileUplaodEl().click()" :loading="isLoading">Upload</el-button>
         <el-button :icon="Refresh" @click="loadFileList()" :loading="isLoading">Refresh</el-button>
+        <form style="display: none;">
+          <input class="FileUpload" type="file" multiple @change="fileUploadChanged()" />
+        </form>
       </div>
       <div class="FileList mt-8">
-        <a
-          v-for="fp in fileList"
-          class="FileItem"
-          :href="`/api/drive/file/${fp}`"
-          target="_blank"
-        >
-          <el-text size="large">{{ fp }}</el-text>
-        </a>
+        <div v-if="fileList.length === 0">
+          <div class="text-center select-none">
+            <el-text type="info">No files</el-text>
+          </div>
+        </div>
+        <div v-for="fp in fileList" class="FileItem flex justify-center items-center">
+          <a
+            class="flex-1"
+            :href="`/api/drive/file/${fp}`"
+            target="_blank"
+          >
+            <el-text size="large">{{ fp }}</el-text>
+          </a>
+          <el-button
+            class="FileItemDeleteBtn mx-1"
+            :icon="Delete" type="danger"
+            plain
+            :loading="isLoading"
+            @click="deleteFile(fp)"
+          />
+        </div>
       </div>
     </div>
     <div v-else>
@@ -31,7 +47,7 @@
 
 <script setup lang="ts">
 import { ElLoading } from 'element-plus';
-import { Upload, Refresh } from '@element-plus/icons-vue'
+import { Upload, Refresh, Delete } from '@element-plus/icons-vue'
 import { appName } from '~/constants/app';
 
 const { isLoggedIn } = useAuth();
@@ -39,13 +55,44 @@ const { isLoggedIn } = useAuth();
 const isLoading = ref(false);
 const fileList = ref<string[]>([]);
 
-async function loadFileList() {
-  isLoading.value = true;
-  const loading = ElLoading.service({ text: 'Loading...' });
+async function _loadFileList() {
   try {
     const res = await $fetch('/api/drive/list', { method: 'POST' });
     fileList.value = res.data;
   } catch {}
+}
+
+async function loadFileList() {
+  isLoading.value = true;
+  const loading = ElLoading.service({ text: 'Loading...' });
+  await _loadFileList();
+  isLoading.value = false;
+  loading.close();
+}
+
+function fileUplaodEl() {
+  return document.querySelector('.FileUpload') as HTMLInputElement;
+}
+
+async function fileUploadChanged() {
+  isLoading.value = true;
+  const loading = ElLoading.service({ text: 'Loading...' });
+  const formData = new FormData();
+  const files = fileUplaodEl().files || [];
+  for (let i = 0; i < files.length; i++) {
+    formData.append(`${i}`, files[i]);
+  }
+  const res = await $fetch('/api/drive/file', { method: 'POST', body: formData });
+  fileList.value = res.data;
+  isLoading.value = false;
+  loading.close();
+}
+
+async function deleteFile(fp: string) {
+  isLoading.value = true;
+  const loading = ElLoading.service({ text: 'Loading...' });
+  const res = await $fetch('/api/drive/file', { method: 'DELETE', body: { fp } });
+  fileList.value = res.data;
   isLoading.value = false;
   loading.close();
 }
@@ -73,13 +120,19 @@ definePageMeta({
 }
 
 .FileItem {
-  display: block;
-  padding: .5rem 1rem;
   border-bottom: 1px solid #80808080;
+}
+
+.FileItem a {
+  padding: .5rem 1rem;
   transition: .3s ease-in-out;
 }
 
-.FileItem:hover {
+.FileItem a:hover {
   background: #ffffff10;
+}
+
+.FileItemDeleteBtn {
+  padding: 8px;
 }
 </style>
