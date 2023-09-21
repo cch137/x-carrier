@@ -64,7 +64,13 @@ async function uploadFiles(files: FileList | null) {
         formData.append(`${i}`, files[i]);
       }
     }
-    await $fetch('/api/drive/file', { method: 'POST', body: formData });
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/drive/file');
+    xhr.send(formData);
+    xhr.upload.addEventListener('progress', (ev) => {
+      console.log(ev.lengthComputable, ev.loaded, ev.total);
+    });
+    // await $fetch('/api/drive/file', { method: 'POST', body: formData });
   } catch {}
   isLoading.value = false;
 }
