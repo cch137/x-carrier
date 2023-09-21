@@ -2,10 +2,10 @@
   <div class="mt-8 flex-col flex-center">
     <div v-if="isLoggedIn">
       <div>
-        <el-button :icon="Upload" @click="fileUplaodEl().click()" :loading="isLoading">Upload</el-button>
-        <el-button :icon="Refresh" @click="loadFileList()" :loading="isLoading">Refresh</el-button>
+        <el-button :icon="Upload" @click="fileInputEl().click()" :loading="isLoading">Upload</el-button>
+        <el-button :icon="Refresh" @click="loading(drive.refresh)" :loading="isLoading">Refresh</el-button>
         <form style="display: none;">
-          <input class="FileUpload" type="file" multiple @change="fileUploadChanged()" />
+          <input class="FileUpload" type="file" multiple @change="loading(() => drive.uploadFiles(fileInputEl().files))" />
         </form>
       </div>
       <div class="FileList mt-8">
@@ -27,7 +27,7 @@
             :icon="Delete" type="danger"
             plain
             :loading="isLoading"
-            @click="deleteFile(fp)"
+            @click="loading(() => drive.deleteFile(fp))"
           />
         </div>
       </div>
@@ -52,80 +52,31 @@ import { appName } from '~/constants/app';
 
 const { isLoggedIn } = useAuth();
 
-const isLoading = ref(false);
-const fileList = ref<string[]>([]);
+const drive = useDrive();
+const { isLoading, fileList } = drive;
 
-async function _fetchFileList() {
+async function loading(func: Function, text = 'Loading...') {
+  const loading = ElLoading.service({ text });
   try {
-    const res = await $fetch('/api/drive/list', { method: 'POST' });
-    fileList.value = res.data;
-  } catch {}
+    return await func();
+  } finally {
+    loading.close();
+  }
 }
 
-async function loadFileList() {
-  isLoading.value = true;
-  const loading = ElLoading.service({ text: 'Loading...' });
-  await _fetchFileList();
-  isLoading.value = false;
-  loading.close();
-}
-
-function fileUplaodEl() {
+function fileInputEl() {
   return document.querySelector('.FileUpload') as HTMLInputElement;
 }
 
-async function fileUploadChanged() {
-  isLoading.value = true;
-  const loading = ElLoading.service({ text: 'Loading...' });
-  const formData = new FormData();
-  const files = fileUplaodEl().files || [];
-  for (let i = 0; i < files.length; i++) formData.append(`${i}`, files[i]);
-  await $fetch('/api/drive/file', { method: 'POST', body: formData });
-  isLoading.value = false;
-  loading.close();
-}
-
-async function deleteFile(fp: string) {
-  isLoading.value = true;
-  const loading = ElLoading.service({ text: 'Loading...' });
-  await $fetch('/api/drive/file', { method: 'DELETE', body: { fp } });
-  isLoading.value = false;
-  loading.close();
-}
-
-watch(isLoggedIn, (value) => value ? loadFileList() : null);
+watch(isLoggedIn, (value) => value ? loading(drive.refresh) : drive.fileList.value = []);
 
 if (process.client) {
-  if (isLoggedIn.value) loadFileList();
-}
-
-async function startListening() {
-  const controller = new AbortController()
-  const streamRes = await fetch('/api/drive/event', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: '{}',
-    signal: controller.signal
-  });
-  const decoder = new TextDecoder();
-  // @ts-ignore
-  const reader = streamRes.body.getReader();
-  const readChunks = async () => {
-    await reader.read().then(async ({ value, done }) => {
-      if (done) return;
-      const decodedValue = decoder.decode(value);
-      _fetchFileList();
-      readChunks();
-    });
+  if (isLoggedIn.value) {
+    loading(drive.refresh);
   }
-  readChunks()
 }
 
-if (process.client) {
-  startListening();
-}
-
-useTitle(`Home - ${appName}`)
+useTitle(`${appName}`)
 definePageMeta({
   layout: 'default'
 })
