@@ -75,39 +75,111 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
 });
 var Text = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__file", "/home/runner/work/element-plus/element-plus/packages/components/text/src/text.vue"]]);
 const ElText = withInstall(Text);
+const isLoading = ref(false);
+const fileList = ref([]);
+let streamingIsStarted = false;
+async function startStreaming() {
+  if (streamingIsStarted)
+    return;
+  streamingIsStarted = true;
+  const controller = new AbortController();
+  const decoder = new TextDecoder();
+  const readChunks = async () => {
+    await reader.read().then(async ({ value, done }) => {
+      if (done) {
+        streamingIsStarted = false;
+        startStreaming();
+        return;
+      }
+      const decodedValue = decoder.decode(value);
+      if (decodedValue) {
+        _fetchFileList();
+      }
+      readChunks();
+    });
+  };
+  const streamRes = await fetch("/api/drive/event", {
+    method: "POST",
+    body: "{}",
+    signal: controller.signal
+  });
+  const reader = streamRes.body.getReader();
+  readChunks();
+}
+async function _fetchFileList() {
+  try {
+    const res = await $fetch("/api/drive/list", { method: "POST" });
+    fileList.value = res.data;
+    startStreaming();
+  } catch {
+    fileList.value = [];
+  }
+}
+async function fetchFileList() {
+  isLoading.value = true;
+  try {
+    await _fetchFileList();
+  } catch {
+  }
+  isLoading.value = false;
+}
+async function uploadFiles(files) {
+  isLoading.value = true;
+  try {
+    const formData = new FormData();
+    if (files !== null) {
+      for (let i = 0; i < files.length; i++) {
+        formData.append(`${i}`, files[i]);
+      }
+    }
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/drive/file");
+    xhr.send(formData);
+    xhr.upload.addEventListener("progress", (ev) => {
+      console.log(ev.lengthComputable, ev.loaded, ev.total);
+    });
+  } catch {
+  }
+  isLoading.value = false;
+}
+async function deleteFile(fp) {
+  isLoading.value = true;
+  try {
+    await $fetch("/api/drive/file", { method: "DELETE", body: { fp } });
+  } catch {
+  }
+  isLoading.value = false;
+}
+function useDrive() {
+  return {
+    fileList,
+    isLoading,
+    _refresh: _fetchFileList,
+    refresh: fetchFileList,
+    uploadFiles,
+    deleteFile
+  };
+}
 const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "index",
   __ssrInlineRender: true,
   setup(__props) {
     const { isLoggedIn } = useAuth();
-    const isLoading = ref(false);
-    const fileList = ref([]);
-    async function _fetchFileList() {
+    const drive = useDrive();
+    const { isLoading: isLoading2, fileList: fileList2 } = drive;
+    async function loading(func, text = "Loading...") {
+      const loading2 = ElLoading.service({ text });
       try {
-        const res = await $fetch("/api/drive/list", { method: "POST" });
-        fileList.value = res.data;
-      } catch {
+        return await func();
+      } finally {
+        loading2.close();
       }
     }
-    async function loadFileList() {
-      isLoading.value = true;
-      const loading = ElLoading.service({ text: "Loading..." });
-      await _fetchFileList();
-      isLoading.value = false;
-      loading.close();
-    }
-    function fileUplaodEl() {
+    function fileInputEl() {
       return document.querySelector(".FileUpload");
     }
-    async function deleteFile(fp) {
-      isLoading.value = true;
-      const loading = ElLoading.service({ text: "Loading..." });
-      await $fetch("/api/drive/file", { method: "DELETE", body: { fp } });
-      isLoading.value = false;
-      loading.close();
-    }
-    watch(isLoggedIn, (value) => value ? loadFileList() : null);
-    useTitle(`Home - ${appName}`);
+    watch(isLoggedIn, (value) => value ? loading(drive.refresh) : drive.fileList.value = []);
+    useTitle(`${appName}`);
     return (_ctx, _push, _parent, _attrs) => {
       const _component_el_button = ElButton;
       const _component_el_text = ElText;
@@ -117,8 +189,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         _push(`<div><div>`);
         _push(ssrRenderComponent(_component_el_button, {
           icon: unref(upload_default),
-          onClick: ($event) => fileUplaodEl().click(),
-          loading: unref(isLoading)
+          onClick: ($event) => fileInputEl().click(),
+          loading: unref(isLoading2)
         }, {
           default: withCtx((_, _push2, _parent2, _scopeId) => {
             if (_push2) {
@@ -133,8 +205,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         }, _parent));
         _push(ssrRenderComponent(_component_el_button, {
           icon: unref(refresh_default),
-          onClick: ($event) => loadFileList(),
-          loading: unref(isLoading)
+          onClick: ($event) => loading(unref(drive).refresh),
+          loading: unref(isLoading2)
         }, {
           default: withCtx((_, _push2, _parent2, _scopeId) => {
             if (_push2) {
@@ -148,7 +220,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           _: 1
         }, _parent));
         _push(`<form style="${ssrRenderStyle({ "display": "none" })}"><input class="FileUpload" type="file" multiple></form></div><div class="FileList mt-8">`);
-        if (unref(fileList).length === 0) {
+        if (unref(fileList2).length === 0) {
           _push(`<div><div class="text-center select-none">`);
           _push(ssrRenderComponent(_component_el_text, { type: "info" }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
@@ -167,7 +239,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           _push(`<!---->`);
         }
         _push(`<!--[-->`);
-        ssrRenderList(unref(fileList), (fp) => {
+        ssrRenderList(unref(fileList2), (fp) => {
           _push(`<div class="FileItem flex justify-center items-center"><a class="flex-1"${ssrRenderAttr("href", `/api/drive/file/${fp}`)} target="_blank">`);
           _push(ssrRenderComponent(_component_el_text, { size: "large" }, {
             default: withCtx((_, _push2, _parent2, _scopeId) => {
@@ -187,8 +259,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             icon: unref(delete_default),
             type: "danger",
             plain: "",
-            loading: unref(isLoading),
-            onClick: ($event) => deleteFile(fp)
+            loading: unref(isLoading2),
+            onClick: ($event) => loading(() => unref(drive).deleteFile(fp))
           }, null, _parent));
           _push(`</div>`);
         });
@@ -267,4 +339,4 @@ _sfc_main.setup = (props, ctx) => {
 };
 
 export { _sfc_main as default };
-//# sourceMappingURL=index-5cf5cca6.mjs.map
+//# sourceMappingURL=index-58934bf7.mjs.map

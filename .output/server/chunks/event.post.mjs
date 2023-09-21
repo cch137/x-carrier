@@ -37,7 +37,15 @@ const event_post = defineEventHandler(async function(event) {
     "Connection": "keep-alive",
     "X-Accel-Buffering": "no"
   });
-  drive.eventTarget.addEventListener("change", () => res.write("1"));
+  function driveOnchange() {
+    res.write("1");
+  }
+  drive.eventTarget.addEventListener("change", driveOnchange);
+  setTimeout(() => {
+    res.end();
+    drive.eventTarget.removeEventListener("change", driveOnchange);
+  }, 60 * 1e3);
+  return;
 });
 
 export { event_post as default };
