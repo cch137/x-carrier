@@ -1,1 +1,0 @@
-import{a4 as o,K as a}from"./entry.4447adc5.js";import{u as n}from"./useAuth.b129453f.js";const r=o(async(u,t)=>{{const{isLoggedIn:e}=n();if(e.value)return a(`/login?next=${t.fullPath}`)}});export{r as default};
